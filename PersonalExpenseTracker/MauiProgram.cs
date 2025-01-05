@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using PersonalExpenseTracker.Services;
 
 namespace PersonalExpenseTracker
 {
@@ -15,9 +16,15 @@ namespace PersonalExpenseTracker
                 });
 
             builder.Services.AddMauiBlazorWebView();
+            builder.Services.AddSingleton<IUserService, UserService>();
+            builder.Services.AddSingleton<ITransactionService, TransactionService>();
+            builder.Services.AddSingleton<IDebtService, DebtService>();
+
+            builder.Services.AddSingleton<AuthenticationStateService>();
+            
 
 #if DEBUG
-    		builder.Services.AddBlazorWebViewDeveloperTools();
+            builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();
 #endif
 

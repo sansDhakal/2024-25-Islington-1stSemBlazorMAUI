@@ -1,0 +1,174 @@
+﻿@page "/dashboard"
+@using PersonalExpenseTracker.Models
+@using PersonalExpenseTracker.Services
+@using PersonalExpenseTracker.Models
+@using PersonalExpenseTracker.Services
+@inject ITransactionService TransactionService
+@inject NavigationManager NavigationManager
+@inject IDebtService DebtService
+@inject AuthenticationStateService AuthenticationStateService
+
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Dashboard</h3>
+    <p class="user-info text-end">
+        <p><strong>User Name:</strong> @authenticatedUser.UserName &nbsp;</p>
+       <p> <strong>Total Amount:</strong> @currentBalance.ToString("C")</p>
+    </p>
+</div>
+
+<div>
+    <div class="d-flex align-items-center mb-3">
+        <label class="me-2">Sort:</label>
+        <select @bind="sortDirection" class="form-select form-select-sm w-auto">
+            <option value="Highest">Highest</option>
+            <option value="Lowest">Lowest</option>
+        </select>
+    </div>
+    
+    <!-- Transactions List -->
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Tag</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Note</th>
+                
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var transaction in sortedTransactions)
+            {
+                <tr>
+                    <td>@transaction.Title</td>
+                    <td>@transaction.TypeId</td>
+                    <td>@transaction.TagId</td>
+                    <td>@transaction.Amount</td>
+                    <td>@transaction.Date.ToShortDateString()</td>
+                    <td>@transaction.Note</td>
+                    
+                </tr>
+            }    
+        </tbody>
+        
+        </table>
+</div>
+
+
+
+@code {
+
+    private List<Transactions> transactions = new List<Transactions>();
+    private List<Transactions> debttransactions = new List<Transactions>();
+    private List<Transactions> inflowoutflowtransactions = new List<Transactions>();
+    private User authenticatedUser = new User();
+
+    private List<DebtTransaction> debtTransactionModelList = new List<DebtTransaction>();
+
+    private double currentBalance;
+    private double totalInflow;
+    private double totalOutflow;
+    private double remainingDebt;
+    private double clearedDebt;
+
+
+    //for filters
+    private IEnumerable<Transactions> filteredTransactions => FilterTransactions();
+    private IEnumerable<Transactions> sortedTransactions => SortTransactions(filteredTransactions);
+
+
+    private string sortDirection = "Highest"; //Default
+
+
+    // Fetch transactions on initialization
+    protected override async Task OnInitializedAsync()
+    {
+
+        await GetLoggedUsers();
+        await LoadLoggedUsersTransactions();
+
+        await SeperateDebtTransactions();
+        await LoadDebtTransactions();
+
+        CalculateCurrentBalance();
+
+        if (transactions == null || !transactions.Any())
+        {
+            Console.WriteLine("No transactions found.");
+        }
+
+    }
+
+    private async Task GetLoggedUsers()
+    {
+        authenticatedUser = AuthenticationStateService.GetAuthenticatedUser();
+
+        if (authenticatedUser == null)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+
+    }
+
+    private async Task LoadLoggedUsersTransactions()
+    {
+        transactions = await TransactionService.LoadUsersTransactionsAsync(authenticatedUser.UserId);
+
+    }
+
+    private async Task SeperateDebtTransactions()
+    {
+        debttransactions = transactions.Where(t => t.TypeId == "Debt").ToList(); //Debt transactions are seperated
+
+        inflowoutflowtransactions = transactions.Where(t => t.TypeId != "Debt").ToList();//Inflow and outflow transactions are seperated type id not having debt
+
+    }
+
+    private async Task LoadDebtTransactions()
+    {
+
+
+        foreach (Transactions debttransaction in debttransactions)
+        {
+            Debts debt = await DebtService.LoadUsersTransactionsDebtsAsync(debttransaction.TransactionId);
+
+            DebtTransaction debtTransactionModel = new DebtTransaction(debttransaction.TransactionId, debttransaction.TypeId, debttransaction.UserId,
+                debttransaction.TagId, debttransaction.Amount, debttransaction.Date,
+                debttransaction.Note, debttransaction.Title, debt.DebtId, debt.DueDate, debt.Source, debt.Status);
+
+            debtTransactionModelList.Add(debtTransactionModel);
+
+
+        }
+    }
+
+    private void CalculateCurrentBalance()
+    {
+        totalInflow = (double)inflowoutflowtransactions.Where(t => t.TypeId == "Credit").Sum(t => t.Amount);
+        totalOutflow = (double)inflowoutflowtransactions.Where(t => t.TypeId == "Debit").Sum(t => t.Amount);
+        remainingDebt = (double)debtTransactionModelList.Where(d => d.Status == "Pending").Sum(d => d.Amount);
+        clearedDebt = (double)debtTransactionModelList.Where(d => d.Status == "Cleared").Sum(d => d.Amount);
+
+        currentBalance = totalInflow + remainingDebt - totalOutflow - clearedDebt;
+    }
+
+    private IEnumerable<Transactions> FilterTransactions()
+    {
+        var filtered = transactions.AsQueryable();
+        return filtered;
+    }
+
+    private IEnumerable<Transactions> SortTransactions(IEnumerable<Transactions> filteredTransactions)
+    {
+        return (sortDirection) switch
+        {
+            ("Highest") => filteredTransactions.OrderByDescending(t => t.Amount).Take(5),
+            ("Lowest") => filteredTransactions.OrderBy(t => t.Amount).Take(5),
+            _ => filteredTransactions
+        };
+    }
+
+}

@@ -1,0 +1,121 @@
+﻿@page "/"
+@using PersonalExpenseTracker.Models
+@using PersonalExpenseTracker.Services
+@inject IUserService userService
+@inject NavigationManager navigationManager
+@inject AuthenticationStateService authStateService
+
+<style>
+    .login-container {
+        max-width: 400px;
+        margin: 50px auto;
+        padding: 20px;
+        background: #f9f9f9;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .login-form .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+
+    .btn {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .btn:hover {
+        background-color: #0056b3;
+    }
+
+    .alert {
+        padding: 10px;
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+        border-radius: 5px;
+        font-size: 14px;
+    }
+</style>
+
+<div class="login-container">
+    <h3 class="text-center">Login</h3>
+
+    <form class="login-form">
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" class="form-control" @bind="username" />
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" class="form-control" @bind="password" />
+        </div>
+        <button type="button" class="btn btn-primary btn-block" @onclick="LoginUser">Login</button>
+    </form>
+
+    <p class="text-center mt-3">
+        Don't have an account?
+        <a href="/signup">Sign Up</a>
+    </p>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger mt-3">@errorMessage</div>
+    }
+</div>
+
+@code {
+    private string username;
+    private string password;
+    private string errorMessage;
+
+    private async Task LoginUser()
+    {
+        try
+        {
+            var users = await userService.LoadUsersAsync();
+            var user = users.FirstOrDefault(u => u.UserName == username && u.Password == HashPassword(password));
+
+            if (user != null)
+            {
+                authStateService.SetAuthenticatedUser(user);
+                navigationManager.NavigateTo("/Dashboard");
+            }
+            else
+            {
+                errorMessage = "Invalid username or password.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred during login: {ex.Message}";
+        }
+    }
+
+    private string HashPassword(string password)
+    {
+        using (var sha256 = System.Security.Cryptography.SHA256.Create())
+        {
+            var bytes = System.Text.Encoding.UTF8.GetBytes(password);
+            var hash = sha256.ComputeHash(bytes);
+            return Convert.ToBase64String(hash);
+        }
+    }
+}

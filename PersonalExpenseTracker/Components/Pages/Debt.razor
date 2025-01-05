@@ -1,0 +1,211 @@
+﻿@page "/debt"
+@using PersonalExpenseTracker.Models
+@using PersonalExpenseTracker.Services
+@inject ITransactionService transactionService
+@inject IDebtService debtService
+@inject NavigationManager navigationManager
+@inject AuthenticationStateService authService;
+
+<h3>Debt</h3>
+
+<form class="debt-form">
+    <div class="form-group">
+        <label for="amount">Amount:</label>
+        <input type="number" id="amount" class="form-control" @bind="newTransaction.Amount" required />
+    </div>
+
+    <div class="form-group">
+        <label for="source">Source:</label>
+        <input type="text" id="source" class="form-control" @bind="newDebt.Source" required />
+    </div>
+
+    <div class="form-group">
+        <label for="status">Status:</label>
+        <select id="status" class="form-control" @bind="newDebt.Status" required>
+            <option value="" disabled selected>Select Status</option>
+            <option value="Pending">Pending</option>
+            <option value="Cleared">Cleared</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="dueDate">Due Date:</label>
+        <input type="date" id="dueDate" class="form-control" @bind="newDebt.DueDate" required />
+    </div>
+
+    <div class="form-group">
+        <label for="tagType">Tag Type:</label>
+        <select id="tagType" class="form-control" @bind="tagType">
+            <option value="Custom">Custom</option>
+            <option value="Existing">Existing</option>
+        </select>
+    </div>
+
+    @if (tagType == "Existing")
+    {
+        <div class="form-group">
+            <label for="tag">Tag:</label>
+            <select id="tag" class="form-control" @bind="newTransaction.TagId">
+                <option value="Bank">Bank</option>
+                <option value="Family">Family</option>
+                <option value="Friend">Friend</option>
+                <option value="Others">Others</option>
+            </select>
+        </div>
+    }
+    else
+    {
+        <div class="form-group">
+            <label for="customTag">Custom Tag:</label>
+            <input type="text" id="customTag" class="form-control" @bind="newTransaction.TagId" />
+        </div>
+    }
+
+    <div class="form-group">
+        <label for="title">Title:</label>
+        <input type="text" id="title" class="form-control" @bind="newTransaction.Title" required />
+    </div>
+
+    <div class="form-group">
+        <label for="note">Note:</label>
+        <input type="text" id="note" class="form-control" @bind="newTransaction.Note" />
+    </div>
+
+    <button type="button" class="btn btn-primary" @onclick="AddTransaction">Add Debt</button>
+</form>
+
+@if (errorMessage != null)
+{
+    <p class="error-message">@errorMessage</p>
+}
+
+@code {
+    private Transactions newTransaction = new Transactions(); //obj created for Transaction Class
+    private Debts newDebt = new Debts();
+
+    private string errorMessage;
+    private string tagType;
+
+
+    private async Task AddTransaction()
+    {
+        var user = authService.GetAuthenticatedUser();
+        if (user != null)
+        {
+            newTransaction.UserId = user.UserId;
+            try
+            {
+                newTransaction.TypeId = "Debt"; // because it is a debt
+
+                // Save the new transaction
+                int savedTransactionId = await transactionService.SaveTransactionAsync(newTransaction);
+
+                // Adding the transaction id to the debt record
+                newDebt.TransactionId = savedTransactionId;
+                // Save the debt information of the transaction
+                await debtService.SaveDebtAsync(newDebt);
+
+                // Reset the objects after saving
+                newTransaction = new Transactions();
+                newDebt = new Debts();
+
+                // Clear any previous error messages
+                errorMessage = null;
+
+                // Navigate to the desired page after successful signup
+                navigationManager.NavigateTo("/allTransactions");
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"An error occurred while adding the transaction: {ex.Message}";
+                Console.WriteLine(errorMessage); // Log for debugging
+            }
+        }
+
+    }
+
+}
+
+<style>
+    /* General Styles */
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f4f6f9;
+        color: #333;
+        margin: 0;
+        padding: 0;
+    }
+
+    h3 {
+        text-align: center;
+        color: #007bff;
+        margin-top: 30px;
+        font-size: 2rem;
+    }
+
+    /* Form Styles */
+    .debt-form {
+        max-width: 600px;
+        margin: 20px auto;
+        padding: 30px;
+        background-color: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        font-weight: bold;
+        font-size: 16px;
+        color: #333;
+        display: block;
+    }
+
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        padding: 12px;
+        margin-top: 8px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        font-size: 16px;
+        transition: border-color 0.3s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        border-color: #007bff;
+        outline: none;
+    }
+
+    .btn {
+        width: 100%;
+        padding: 14px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 18px;
+        cursor: pointer;
+        transition: background-color 0.3s ease-in-out;
+    }
+
+    .btn:hover {
+        background-color: #0056b3;
+    }
+
+    /* Error Message Styling */
+    .error-message {
+        color: red;
+        font-weight: bold;
+        text-align: center;
+        margin-top: 20px;
+        font-size: 16px;
+    }
+
+    /* Responsive Design */
+   
+</style>
