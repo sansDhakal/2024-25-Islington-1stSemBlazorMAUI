@@ -11,7 +11,35 @@ namespace PersonalExpenseTracker.Services
     public class TransactionService : ITransactionService
     {
         private readonly string transactionsFilePath = Path.Combine(AppContext.BaseDirectory, "Transactions.json");
-       
+
+        private async Task<List<Transactions>> GetAllTransactionsAsync()
+        {
+            try
+            {
+                if (!File.Exists(transactionsFilePath))
+                {
+                    return new List<Transactions>();
+                }
+
+                var json = await File.ReadAllTextAsync(transactionsFilePath);
+                return JsonSerializer.Deserialize<List<Transactions>>(json) ?? new List<Transactions>();
+            }
+            catch (JsonException jsonEx)
+            {
+                Console.WriteLine($"JSON deserialization error: {jsonEx.Message}");
+                return new List<Transactions>();
+            }
+            catch (IOException ioEx)
+            {
+                Console.WriteLine($"I/O error while loading transactions: {ioEx.Message}");
+                return new List<Transactions>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unexpected error while loading transactions: {ex.Message}");
+                return new List<Transactions>();
+            }
+        }
         public async Task<List<Transactions>> LoadUsersTransactionsAsync(int userId)
         {
             try
@@ -42,7 +70,7 @@ namespace PersonalExpenseTracker.Services
                 transaction.Date = DateTime.Now.Date;
 
                 transactions.Add(transaction);
-                await WriteTransactionsToJson(transactions);
+                await SaveTransactionsToFileAsync(transactions);
 
                 //If the transaction is of type debt, the extra debt information also needs to be saved
                 //The debt record has a transaction id to identigy which transaction the debt record is created for.
@@ -56,36 +84,8 @@ namespace PersonalExpenseTracker.Services
             }
         }
 
-        private async Task<List<Transactions>> GetAllTransactionsAsync()
-        {
-            try
-            {
-                if (!File.Exists(transactionsFilePath))
-                {
-                    return new List<Transactions>();
-                }
 
-                var json = await File.ReadAllTextAsync(transactionsFilePath);
-                return JsonSerializer.Deserialize<List<Transactions>>(json) ?? new List<Transactions>();
-            }
-            catch (JsonException jsonEx)
-            {
-                Console.WriteLine($"JSON deserialization error: {jsonEx.Message}");
-                return new List<Transactions>();
-            }
-            catch (IOException ioEx)
-            {
-                Console.WriteLine($"I/O error while loading transactions: {ioEx.Message}");
-                return new List<Transactions>();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Unexpected error while loading transactions: {ex.Message}");
-                return new List<Transactions>();
-            }
-        }
-
-        private async Task WriteTransactionsToJson(List<Transactions> transactions)
+        private async Task SaveTransactionsToFileAsync(List<Transactions> transactions)
         {
             try
             {

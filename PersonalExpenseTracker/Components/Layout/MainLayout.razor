@@ -1,4 +1,11 @@
-﻿@inherits LayoutComponentBase
+﻿@using PersonalExpenseTracker.Services
+@using PersonalExpenseTracker.Models
+@using PersonalExpenseTracker.Dtos
+@inject AuthenticationStateService AuthenticationStateService
+@inject ITransactionHelperService TransactionHelperService
+@inject ITransactionService TransactionService
+
+@inherits LayoutComponentBase
 
 <div class="page">
     <div class="sidebar">
@@ -6,12 +13,67 @@
     </div>
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+        @if (AuthenticationStateService.IsAuthenticated())
+        {
+            <div class="top-row pt-3 min-h-fit-content">
+                <div class="d-flex flex-column align-items-start">
+                    <p>@authenticatedUser.UserName </p>
+                    <p>Available Balance: @authenticatedUser.CurrencyType @currentBalance</p>
+                </div>
+            </div>
+        }
+        
 
         <article class="content px-4">
             @Body
         </article>
     </main>
 </div>
+
+
+@code{
+
+    private User authenticatedUser = new User();
+
+    private List<Transactions> transactions = new List<Transactions>();
+    private List<Transactions> debtTransactions = new List<Transactions>();
+    private List<Transactions> inflowOutflowTransactions = new List<Transactions>();
+
+    private List<DebtTransactionDto> debtTransactionDtos = new List<DebtTransactionDto>();
+
+    private double currentBalance;
+    private double totalInflow;
+    private double totalOutflow;
+    private double totalRemainingDebt;
+    private double totalClearedDebt;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (AuthenticationStateService.IsAuthenticated())
+        {
+            authenticatedUser = AuthenticationStateService.GetAuthenticatedUser();
+
+            transactions = await TransactionService.LoadUsersTransactionsAsync(authenticatedUser.UserId);
+
+            inflowOutflowTransactions = TransactionHelperService.ExtractInflowOutflowTransactions(transactions);
+            debtTransactions = TransactionHelperService.ExtractDebtTransactions(transactions);
+
+            debtTransactionDtos = await TransactionHelperService.LoadDebtTransactions(debtTransactions);
+
+            totalInflow = TransactionHelperService.CalculateTotalInflow(inflowOutflowTransactions);
+            totalOutflow = TransactionHelperService.CalculateTotalOutflow(inflowOutflowTransactions);
+            totalRemainingDebt = TransactionHelperService.CalculateTotalRemainingDebt(debtTransactionDtos);
+            totalClearedDebt = TransactionHelperService.CalculateTotalClearedDebt(debtTransactionDtos);
+
+            currentBalance = TransactionHelperService.CalculateCurrentBalance(totalInflow, totalOutflow, totalRemainingDebt);
+
+            if (transactions == null || !transactions.Any())
+            {
+                Console.WriteLine("No transactions found.");
+            }
+        }
+
+        StateHasChanged();
+
+    }
+}

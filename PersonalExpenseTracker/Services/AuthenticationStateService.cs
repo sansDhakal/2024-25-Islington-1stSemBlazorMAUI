@@ -8,6 +8,10 @@ namespace PersonalExpenseTracker.Services
     {
         private User authenticatedUser;
 
+        public event Action? OnStateChanged;
+
+        private void NotifyStateChanged() => OnStateChanged?.Invoke();
+
         public User GetAuthenticatedUser()
         {
             return authenticatedUser;
@@ -16,6 +20,7 @@ namespace PersonalExpenseTracker.Services
         public void SetAuthenticatedUser(User user)
         {
             authenticatedUser = user;
+            NotifyStateChanged();
         }
 
         public bool IsAuthenticated()
@@ -30,6 +35,7 @@ namespace PersonalExpenseTracker.Services
         public void Logout()
         {
             authenticatedUser = null;
+            NotifyStateChanged();
         }
     }
 }

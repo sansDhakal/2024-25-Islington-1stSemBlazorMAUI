@@ -31,7 +31,7 @@ namespace PersonalExpenseTracker.Services
                 users.Add(user);
 
                 // Saving the whole list into the json file at once
-                await SaveUsersAsync(users);
+                await SaveUsersToFileAsync(users);
             }
             catch (Exception ex)
             {
@@ -71,7 +71,7 @@ namespace PersonalExpenseTracker.Services
         }
 
         //Writes all the users from the list into the Json file.
-        private async Task SaveUsersAsync(List<User> users)
+        private async Task SaveUsersToFileAsync(List<User> users)
         {
             try
             {

@@ -1,24 +1,27 @@
 ﻿@page "/allTransactions"
 @using PersonalExpenseTracker.Models
 @using PersonalExpenseTracker.Services
+@using PersonalExpenseTracker.Dtos
 @inject ITransactionService TransactionService
+@inject ITransactionHelperService TransactionHelperService
 @inject NavigationManager NavigationManager
 @inject IDebtService DebtService
 @inject AuthenticationStateService AuthenticationStateService
 
-<p><strong>User Name:</strong> @authenticatedUser.UserName</p>
-<p><strong>Total Amount:</strong> @currentBalance</p>
+
 
 <!-- Filters Section -->
-<div class="filters-section">
-    <div class="filter-item">
-        <label>Search</label>
-        <input type="search" class="form-control" @bind="searchlist" placeholder="Search by Title" />
+<div class="filters-section" style="display: grid; gap: 15px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));">
+    <!-- Search Filter -->
+    <div class="filter-item" style="display: flex; flex-direction: column;">
+        <label for="search" class="form-label" style="font-size: 0.9rem;">Search</label>
+        <input type="search" class="form-control form-control-sm" @bind="searchlist" placeholder="Search by Title" style="font-size: 0.9rem;" />
     </div>
 
-    <div class="filter-item">
-        <label>Type:</label>
-        <select @bind="filterType" class="form-control">
+    <!-- Type Filter -->
+    <div class="filter-item" style="display: flex; flex-direction: column;">
+        <label for="type" class="form-label" style="font-size: 0.9rem;">Type:</label>
+        <select @bind="filterType" class="form-select form-select-sm" style="font-size: 0.9rem;">
             <option value="NoFilter">No Filter</option>
             <option value="Credit">Credit</option>
             <option value="Debit">Debit</option>
@@ -26,9 +29,10 @@
         </select>
     </div>
 
-    <div class="filter-item">
-        <label>Tag:</label>
-        <select @bind="filtertag" class="form-control">
+    <!-- Tag Filter -->
+    <div class="filter-item" style="display: flex; flex-direction: column;">
+        <label for="tag" class="form-label" style="font-size: 0.9rem;">Tag:</label>
+        <select @bind="filtertag" class="form-select form-select-sm" style="font-size: 0.9rem;">
             <option value="NoFilter">No Filter</option>
             <option value="Monthly">Monthly</option>
             <option value="Yearly">Yearly</option>
@@ -38,124 +42,148 @@
         </select>
     </div>
 
-    <div class="filter-item">
-        <label>Date From:</label>
-        <input type="date" class="form-control" @bind="filterDateFrom" />
+    <!-- Date From Filter -->
+    <div class="filter-item" style="display: flex; flex-direction: column;">
+        <label for="dateFrom" class="form-label" style="font-size: 0.9rem;">Date From:</label>
+        <input type="date" class="form-control form-control-sm" @bind="filterDateFrom" style="font-size: 0.9rem;" />
     </div>
 
-    <div class="filter-item">
-        <label>Date To:</label>
-        <input type="date" class="form-control" @bind="filterDateTo" />
+    <!-- Date To Filter -->
+    <div class="filter-item" style="display: flex; flex-direction: column;">
+        <label for="dateTo" class="form-label" style="font-size: 0.9rem;">Date To:</label>
+        <input type="date" class="form-control form-control-sm" @bind="filterDateTo" style="font-size: 0.9rem;" />
     </div>
 
-    <div class="filter-item">
-        <label>Specific Date:</label>
-        <input type="date" class="form-control" @bind="specifiedFilterDate" />
+    <!-- Specific Date Filter -->
+    <div class="filter-item" style="display: flex; flex-direction: column;">
+        <label for="specificDate" class="form-label" style="font-size: 0.9rem;">Specific Date:</label>
+        <input type="date" class="form-control form-control-sm" @bind="specifiedFilterDate" style="font-size: 0.9rem;" />
     </div>
 
-    <div class="filter-item">
-        <label>Sort:</label>
-        <select @bind="choosedSortOption" class="form-control">
-            <option value="">None</option>
-            <option value="Date">Latest Date</option>
+    <!-- Sort Filter -->
+    <div class="filter-item" style="display: flex; flex-direction: column;">
+        <label for="sort" class="form-label" style="font-size: 0.9rem;">Sort:</label>
+        <select @bind="sortOption" class="form-select form-select-sm" style="font-size: 0.9rem;">
+            <option value="Id">Default</option>
+            <option value="Date">Added Date</option>
         </select>
     </div>
 
-    <div class="filter-item">
-        <label>Sort Order:</label>
-        <select @bind="sort" class="form-control">
+    <!-- Sort Order Filter -->
+    <div class="filter-item" style="display: flex; flex-direction: column;">
+        <label for="sortOrder" class="form-label" style="font-size: 0.9rem;">Sort Order:</label>
+        <select @bind="sortDirection" class="form-select form-select-sm" style="font-size: 0.9rem;">
             <option value="Ascending">Ascending</option>
             <option value="Descending">Descending</option>
         </select>
     </div>
 </div>
 
-<br />
-<b><h3>Transactions</h3> </b>
 
-<!-- Transactions List -->
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Title</th>
-            <th>Type</th>
-            <th>Tag</th>
-            <th>Amount</th>
-            <th>Date</th>
-            <th>Note</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var transaction in sortedTransactions)
-        {
+
+<br />
+
+<div class="background" style="background-color: #f4f5f5">
+    <!-- Transactions List -->
+    <div class="text-center">
+        <h3 style="color: black; font-weight: bold; margin-bottom: 20px;">Total Transaction</h3>
+    </div>
+
+
+    <table class="table table-striped table-bordered table-hover" style="width: 100%; margin-top: 20px; border-collapse: collapse; border-radius: 8px;">
+        <thead style="background-color: #6A80B99; ">
             <tr>
-                <td>@transaction.Title</td>
-                <td>@transaction.TypeId</td>
-                <td>@transaction.TagId</td>
-                <td>@transaction.Amount</td>
-                <td>@transaction.Date.ToShortDateString()</td>
-                <td>@transaction.Note</td>
+                <th style="padding: 12px 15px; text-align: left;">Title</th>
+                <th style="padding: 12px 15px; text-align: left;">Type</th>
+                <th style="padding: 12px 15px; text-align: left;">Tag</th>
+                <th style="padding: 12px 15px; text-align: left;">Amount</th>
+                <th style="padding: 12px 15px; text-align: left;">Date</th>
+                <th style="padding: 12px 15px; text-align: left;">Note</th>
             </tr>
-        }
-    </tbody>
-</table>
-
+        </thead>
+        <tbody>
+            @foreach (var transaction in sortedTransactions)
+            {
+                <tr style="transition: background-color 0.3s; background-color: #ffffff;">
+                    <td style="padding: 12px 15px;">@transaction.Title</td>
+                    <td style="padding: 12px 15px;">@transaction.TypeId</td>
+                    <td style="padding: 12px 15px;">@transaction.TagId</td>
+                    <td style="padding: 12px 15px; font-weight: bold;">@transaction.Amount</td>
+                    <td style="padding: 12px 15px;">@transaction.Date.ToShortDateString()</td>
+                    <td style="padding: 12px 15px;">@transaction.Note</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
 <br />
-<h3>Debts</h3>
+
+@* Debts *@
+<div class="background" style="background-color: #f4f5f5">
+    <div class="text-center">
+        <h3 style="color: black; font-weight: bold; margin-bottom: 20px;">Debt</h3>
+    </div>
+
 
 <!-- Debts List -->
-<table class="table table-striped">
-    <thead>
+<table class="table table-striped table-bordered table-hover" style="width: 100%; margin-top: 20px; border-collapse: collapse; border-radius: 8px;">
+        <thead style="background-color: #6A80B99; ">
+    
         <tr>
-            <th>Title</th>
-            <th>Type</th>
-            <th>Tag</th>
-            <th>Amount</th>
-            <th>Date</th>
-            <th>Due Date</th>
-            <th>Note</th>
-            <th>Source</th>
-            <th>Status</th>
+                <th style="padding: 12px 15px; text-align: left;">Title</th>
+                <th style ="padding: 12px 15px; text-align: left;">Type</th>
+                <th style ="padding: 12px 15px; text-align: left;">Tag</th>
+                <th style="padding: 12px 15px; text-align: left;">Amount</th>
+                <th style ="padding: 12px 15px; text-align: left;">Date</th>
+                <th style ="padding: 12px 15px; text-align: left;">Due Date</th>
+                <th style="padding: 12px 15px; text-align: left;">Note</th>
+                <th style="padding: 12px 15px; text-align: left;">Source</th>
+                <th style="padding: 12px 15px; text-align: left;">Status</th>
         </tr>
-    </thead>
+        </thead>
     <tbody>
         @foreach (var debtTransaction in sortedDebts)
         {
-            <tr class="@GetDebtStatusClass(debtTransaction.Status)">
-                <td>@debtTransaction.Title</td>
-                <td>@debtTransaction.TypeId</td>
-                <td>@debtTransaction.TagId</td>
-                <td>@debtTransaction.Amount</td>
-                <td>@debtTransaction.Date.ToShortDateString()</td>
-                <td>@debtTransaction.DueDate.ToShortDateString()</td>
-                <td>@debtTransaction.Note</td>
-                <td>@debtTransaction.Source</td>
-                <td>@debtTransaction.Status</td>
-            </tr>
+                <tr class="@GetDebtStatusClass(debtTransaction.Status)" style="transition: background-color 0.3s; background-color: #ffffff;">
+
+                    <td style="padding: 12px 15px;">@debtTransaction.Title</td>
+                    <td style="padding: 12px 15px;">@debtTransaction.TypeId</td>
+                    <td style="padding: 12px 15px;">@debtTransaction.TagId</td>
+                    <td style="padding: 12px 15px;">@debtTransaction.Amount</td>
+                    <td style="padding: 12px 15px;">@debtTransaction.Date.ToShortDateString()</td>
+                    <td style="padding: 12px 15px;">@debtTransaction.DueDate.ToShortDateString()</td>
+                    <td style="padding: 12px 15px;">@debtTransaction.Note</td>
+                    <td style="padding: 12px 15px;">@debtTransaction.Source</td>
+                    <td style ="padding: 12px 15px;">@debtTransaction.Status</td>
+                   
+
+                </tr>
         }
     </tbody>
 </table>
+</div>
 
 @code {
-    private List<Transactions> transactions = new List<Transactions>();
-    private List<Transactions> debttransactions = new List<Transactions>();
-    private List<Transactions> inflowoutflowtransactions = new List<Transactions>();
     private User authenticatedUser = new User();
 
-    private List<DebtTransaction> debtTransactionModelList = new List<DebtTransaction>();
+    private List<Transactions> transactions = new List<Transactions>();
+    private List<Transactions> debtTransactions = new List<Transactions>();
+    private List<Transactions> inflowOutflowTransactions = new List<Transactions>();
+
+    private List<DebtTransactionDto> debtTransactionDtos = new List<DebtTransactionDto>();
 
     private double currentBalance;
     private double totalInflow;
     private double totalOutflow;
-    private double remainingDebt;
-    private double clearedDebt;
+    private double totalRemainingDebt;
+    private double totalClearedDebt;
 
     // for filters
     private IEnumerable<Transactions> filteredTransactions => FilterTransactions();
     private IEnumerable<Transactions> sortedTransactions => SortTransactions(filteredTransactions);
 
-    private IEnumerable<DebtTransaction> filteredDebts => FilterDebts();
-    private IEnumerable<DebtTransaction> sortedDebts => SortDebts(filteredDebts);
+    private IEnumerable<DebtTransactionDto> filteredDebts => FilterDebts();
+    private IEnumerable<DebtTransactionDto> sortedDebts => SortDebts(filteredDebts);
 
     // Filter Properties
     private string filterType = "NoFilter";
@@ -163,17 +191,27 @@
     private DateTime? filterDateFrom;
     private DateTime? filterDateTo;
     private string searchlist;
-    private string choosedSortOption;
-    private string sort;
+    private string sortOption;
+    private string sortDirection;
     private DateTime? specifiedFilterDate;
 
     protected override async Task OnInitializedAsync()
     {
-        await GetLoggedUsers();
-        await LoadLoggedUsersTransactions();
-        await SeperateDebtTransactions();
-        await LoadDebtTransactions();
-        CalculateCurrentBalance();
+        authenticatedUser = AuthenticationStateService.GetAuthenticatedUser();
+
+        transactions = await TransactionService.LoadUsersTransactionsAsync(authenticatedUser.UserId);
+
+        inflowOutflowTransactions = TransactionHelperService.ExtractInflowOutflowTransactions(transactions);
+        debtTransactions = TransactionHelperService.ExtractDebtTransactions(transactions);
+
+        debtTransactionDtos = await TransactionHelperService.LoadDebtTransactions(debtTransactions);
+
+        totalInflow = TransactionHelperService.CalculateTotalInflow(inflowOutflowTransactions);
+        totalOutflow = TransactionHelperService.CalculateTotalOutflow(inflowOutflowTransactions);
+        totalRemainingDebt = TransactionHelperService.CalculateTotalRemainingDebt(debtTransactionDtos);
+        totalClearedDebt = TransactionHelperService.CalculateTotalClearedDebt(debtTransactionDtos);
+
+        currentBalance = TransactionHelperService.CalculateCurrentBalance(totalInflow, totalOutflow, totalRemainingDebt);
 
         if (transactions == null || !transactions.Any())
         {
@@ -181,54 +219,10 @@
         }
     }
 
-    private async Task GetLoggedUsers()
-    {
-        authenticatedUser = AuthenticationStateService.GetAuthenticatedUser();
-
-        if (authenticatedUser == null)
-        {
-            NavigationManager.NavigateTo("/");
-        }
-    }
-
-    private async Task LoadLoggedUsersTransactions()
-    {
-        transactions = await TransactionService.LoadUsersTransactionsAsync(authenticatedUser.UserId);
-    }
-
-    private async Task SeperateDebtTransactions()
-    {
-        debttransactions = transactions.Where(t => t.TypeId == "Debt").ToList();
-        inflowoutflowtransactions = transactions.Where(t => t.TypeId != "Debt").ToList();
-    }
-
-    private async Task LoadDebtTransactions()
-    {
-        foreach (Transactions debttransaction in debttransactions)
-        {
-            Debts debt = await DebtService.LoadUsersTransactionsDebtsAsync(debttransaction.TransactionId);
-
-            DebtTransaction debtTransactionModel = new DebtTransaction(debttransaction.TransactionId, debttransaction.TypeId, debttransaction.UserId,
-                debttransaction.TagId, debttransaction.Amount, debttransaction.Date,
-                debttransaction.Note, debttransaction.Title, debt.DebtId, debt.DueDate, debt.Source, debt.Status);
-
-            debtTransactionModelList.Add(debtTransactionModel);
-        }
-    }
-
-    private void CalculateCurrentBalance()
-    {
-        totalInflow = (double)inflowoutflowtransactions.Where(t => t.TypeId == "Credit").Sum(t => t.Amount);
-        totalOutflow = (double)inflowoutflowtransactions.Where(t => t.TypeId == "Debit").Sum(t => t.Amount);
-        remainingDebt = (double)debtTransactionModelList.Where(d => d.Status == "Pending").Sum(d => d.Amount);
-        clearedDebt = (double)debtTransactionModelList.Where(d => d.Status == "Cleared").Sum(d => d.Amount);
-
-        currentBalance = totalInflow + remainingDebt - totalOutflow - clearedDebt;
-    }
 
     private IEnumerable<Transactions> FilterTransactions()
     {
-        var filtereddata = inflowoutflowtransactions.AsQueryable();
+        var filtereddata = inflowOutflowTransactions.AsQueryable();
 
         if (!string.IsNullOrEmpty(filtertag) && filterType != "NoFilter")
         {
@@ -261,19 +255,19 @@
 
     private IEnumerable<Transactions> SortTransactions(IEnumerable<Transactions> filteredTransactions)
     {
-        return (choosedSortOption, sort) switch
+        return (sortOption, sortDirection) switch
         {
-            ("TransactionId", "Ascending") => filteredTransactions.OrderBy(t => t.TransactionId),
-            ("TransactionId", "Descending") => filteredTransactions.OrderByDescending(t => t.TransactionId),
-            ("CreatedDate", "Ascending") => filteredTransactions.OrderBy(t => t.Date),
-            ("CreatedDate", "Descending") => filteredTransactions.OrderByDescending(t => t.Date),
+            ("Id", "Ascending") => filteredTransactions.OrderBy(t => t.TransactionId),
+            ("Id", "Descending") => filteredTransactions.OrderByDescending(t => t.TransactionId),
+            ("Date", "Ascending") => filteredTransactions.OrderBy(t => t.Date),
+            ("Date", "Descending") => filteredTransactions.OrderByDescending(t => t.Date),
             _ => filteredTransactions
         };
     }
 
-    private IEnumerable<DebtTransaction> FilterDebts()
+    private IEnumerable<DebtTransactionDto> FilterDebts()
     {
-        var filtereddata = debtTransactionModelList.AsQueryable();
+        var filtereddata = debtTransactionDtos.AsQueryable();
 
         if (!string.IsNullOrEmpty(filterType) && filtertag != "NoFilter")
         {
@@ -293,14 +287,14 @@
         return filtereddata;
     }
 
-    private IEnumerable<DebtTransaction> SortDebts(IEnumerable<DebtTransaction> filteredDebts)
+    private IEnumerable<DebtTransactionDto> SortDebts(IEnumerable<DebtTransactionDto> filteredDebts)
     {
-        return (choosedSortOption, sort) switch
+        return (sortOption, sortDirection) switch
         {
-            ("TransactionId", "Ascending") => filteredDebts.OrderBy(t => t.TransactionId),
-            ("TransactionId", "Descending") => filteredDebts.OrderByDescending(t => t.TransactionId),
-            ("CreatedDate", "Ascending") => filteredDebts.OrderBy(t => t.Date),
-            ("CreatedDate", "Descending") => filteredDebts.OrderByDescending(t => t.Date),
+            ("Id", "Ascending") => filteredDebts.OrderBy(t => t.TransactionId),
+            ("Id", "Descending") => filteredDebts.OrderByDescending(t => t.TransactionId),
+            ("Date", "Ascending") => filteredDebts.OrderBy(t => t.Date),
+            ("Date", "Descending") => filteredDebts.OrderByDescending(t => t.Date),
             _ => filteredDebts
         };
     }
@@ -309,5 +303,8 @@
     {
         return status == "Pending" ? "text-danger" : "";
     }
+
+
+
 }
 

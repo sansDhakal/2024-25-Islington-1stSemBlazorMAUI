@@ -1,158 +1,284 @@
 ﻿@page "/dashboard"
 @using PersonalExpenseTracker.Models
 @using PersonalExpenseTracker.Services
-@using PersonalExpenseTracker.Models
-@using PersonalExpenseTracker.Services
+@using PersonalExpenseTracker.Dtos
 @inject ITransactionService TransactionService
+@inject ITransactionHelperService TransactionHelperService
 @inject NavigationManager NavigationManager
 @inject IDebtService DebtService
 @inject AuthenticationStateService AuthenticationStateService
 
-
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h3>Dashboard</h3>
-    <p class="user-info text-end">
-        <p><strong>User Name:</strong> @authenticatedUser.UserName &nbsp;</p>
-       <p> <strong>Total Amount:</strong> @currentBalance.ToString("C")</p>
+@*  Total Transaction *@
+<div class="d-flex justify-content-between align-items-center mb-3" style="background: linear-gradient(135deg, #f1f1f1, #e0e0e0); padding: 15px 25px; border-radius: 12px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);">
+    <p class="user-info text-center mb-0" style="display: flex; justify-content: space-evenly; width: 100%; font-size: 1.1rem;">
+        <span style="font-weight: bold; color: #495057; letter-spacing: 0.5px;">Total Debt: <span style="color: #dc3545; font-size: 1.2rem;">@totalDebt.ToString("C")</span></span>
+        <span style="font-weight: bold; color: #495057; letter-spacing: 0.5px;">Total Credit: <span style="color: #28a745; font-size: 1.2rem;">@totalInflow.ToString("C")</span></span>
+        <span style="font-weight: bold; color: #495057; letter-spacing: 0.5px;">Total Debit: <span style="color: #dc3545; font-size: 1.2rem;">@totalOutflow.ToString("C")</span></span>
     </p>
 </div>
 
-<div>
-    <div class="d-flex align-items-center mb-3">
-        <label class="me-2">Sort:</label>
-        <select @bind="sortDirection" class="form-select form-select-sm w-auto">
+
+
+
+@*  All Transactions and Debt Count *@
+<div class="d-flex justify-content-center mb-4">
+    <div class="me-4">
+        <RadzenCard Variant="Variant.Filled" class="rz-my-12 rz-mx-auto" Style="max-width: 420px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+            <RadzenStack Gap="1rem" class="rz-p-4">
+                <RadzenStack>
+                    <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mb-0" style="font-weight: bold; color: black;">All Transactions Count</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body1" style="font-size: 1.25rem; color: #007bff;"><b>@transactionCount</b></RadzenText>
+                </RadzenStack>
+                <RadzenStack>
+                    <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mb-0" style="font-weight: bold; color: black;">Inflow Count</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body1" style="font-size: 1.25rem; color: #28a745;"><b>@inflowCount</b></RadzenText>
+                </RadzenStack>
+                <RadzenStack>
+                    <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mb-0" style="font-weight: bold; color: black;">Outflow Count</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body1" style="font-size: 1.25rem; color: #dc3545;"><b>@outflowCount</b></RadzenText>
+                </RadzenStack>
+            </RadzenStack>
+        </RadzenCard>
+    </div>
+    <div>
+        <RadzenCard Variant="Variant.Filled" class="rz-my-12 rz-mx-auto" Style="max-width: 420px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+            <RadzenStack Gap="1rem" class="rz-p-4">
+                <RadzenStack>
+                    <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mb-0" style="font-weight: bold; color: black;">Debt Count</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body1" style="font-size: 1.25rem; color: #007bff;"><b>@debtCount</b></RadzenText>
+                </RadzenStack>
+                <RadzenStack>
+                    <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mb-0" style="font-weight: bold; color: black;">Remaining Debt Count</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body1" style="font-size: 1.25rem; color: #dc3545;"><b>@remainingDebtCount</b></RadzenText>
+                </RadzenStack>
+                <RadzenStack>
+                    <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mb-0" style="font-weight: bold; color: black;">Cleared Debt Count</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body1" style="font-size: 1.25rem; color: #28a745;"><b>@clearedDebtCount</b></RadzenText>
+                </RadzenStack>
+            </RadzenStack>
+        </RadzenCard>
+    </div>
+</div>
+
+@* Pie Charts for Debts and Inflow/Outflow *@
+<div class="d-flex justify-content-center mb-4">
+    <div class="me-4" style="max-width: 350px;">
+        <RadzenChart>
+            <RadzenPieSeries Data="@debtDataItem" Title="Debts" CategoryProperty="Type" ValueProperty="Value">
+                <RadzenSeriesDataLabels Visible="true" />
+            </RadzenPieSeries>
+        </RadzenChart>
+    </div>
+    <div style="max-width: 350px;">
+        <RadzenChart>
+            <RadzenPieSeries Data="@transactionDataItem" Title="Transactions" CategoryProperty="Type" ValueProperty="Value">
+                <RadzenSeriesDataLabels Visible="true" />
+            </RadzenPieSeries>
+        </RadzenChart>
+    </div>
+</div>
+
+@*  Transactions List  *@
+<div class="background" style="background-color: #f4f5f5" >
+   
+    <div class="text-center">
+        <h3 style="color: black; font-weight: bold; margin-bottom: 20px;">Total Transaction</h3>
+    </div>
+    @* Sort Dropdown *@
+
+    <div class="d-flex align-items-center mb-3" style="margin-top: 20px;">
+        <label class="me-2" style="font-weight: bold;">Sort:</label>
+        <select @bind="sortDirection" class="form-select form-select-sm w-auto" 
+                style="border-radius: 4px; padding: 5px 25px 5px 10px; -webkit-appearance: none;
+                     -moz-appearance: none; appearance: none;  background-position: right 10px center;">
             <option value="Highest">Highest</option>
             <option value="Lowest">Lowest</option>
         </select>
     </div>
-    
-    <!-- Transactions List -->
-    <table class="table table-striped">
-        <thead>
+
+    <table class="table table-striped table-bordered table-hover" style="width: 100%; margin-top: 20px; border-collapse: collapse; border-radius: 8px;">
+        <thead style="background-color: #6A80B99; ">
             <tr>
-                <th>Title</th>
-                <th>Type</th>
-                <th>Tag</th>
-                <th>Amount</th>
-                <th>Date</th>
-                <th>Note</th>
-                
+                <th style="padding: 12px 15px; text-align: left;">Title</th>
+                <th style="padding: 12px 15px; text-align: left;">Type</th>
+                <th style="padding: 12px 15px; text-align: left;">Tag</th>
+                <th style="padding: 12px 15px; text-align: left;">Amount</th>
+                <th style="padding: 12px 15px; text-align: left;">Date</th>
+                <th style="padding: 12px 15px; text-align: left;">Note</th>
             </tr>
         </thead>
         <tbody>
-        @foreach (var transaction in sortedTransactions)
+            @foreach (var transaction in sortedTransactions)
             {
-                <tr>
-                    <td>@transaction.Title</td>
-                    <td>@transaction.TypeId</td>
-                    <td>@transaction.TagId</td>
-                    <td>@transaction.Amount</td>
-                    <td>@transaction.Date.ToShortDateString()</td>
-                    <td>@transaction.Note</td>
-                    
+                <tr style="transition: background-color 0.3s; background-color: #ffffff;">
+                    <td style="padding: 12px 15px;">@transaction.Title</td>
+                    <td style="padding: 12px 15px;">@transaction.TypeId</td>
+                    <td style="padding: 12px 15px;">@transaction.TagId</td>
+                    <td style="padding: 12px 15px; font-weight: bold;">@transaction.Amount</td>
+                    <td style="padding: 12px 15px;">@transaction.Date.ToShortDateString()</td>
+                    <td style="padding: 12px 15px;">@transaction.Note</td>
                 </tr>
-            }    
+            }
         </tbody>
-        
-        </table>
+    </table>
 </div>
+<br />
+
+ @* Pending Debt Section  *@
+<div class="background" style="background-color : #f4f5f5">
+    <div class=" text-center">
+        <h3 style="color: #dc3545; font-weight: bold; margin-top: 30px;">Pending Debt</h3>
+    </div>
+
+ @* Filter Section  *@
+    <div class="d-flex align-items-center mb-3">
+        <label class="me-2" style="font-weight: bold;">Date From:</label>
+        <input type="date" class="form-control form-control-sm w-auto" style="border-radius: 4px; padding: 5px;" @bind="filterDateFrom" />
+    </div>
+
+    <div class="d-flex align-items-center mb-3">
+        <label class="me-2" style="font-weight: bold;">Date To:</label>
+        <input type="date" class="form-control form-control-sm w-auto" style="border-radius: 4px; padding: 5px;" @bind="filterDateTo" />
+    </div>
+
+ @* Debts List Table with Status Colors  *@
+    <table class="table table-striped table-bordered table-hover" style="width: 100%; margin-top: 20px; border-radius: 8px; border-collapse: collapse;">
+        <thead style= color: white;">
+            <tr>
+                <th style="padding: 12px 15px; text-align: left;">Amount</th>
+                <th style="padding: 12px 15px; text-align: left;">Title</th>
+                <th style="padding: 12px 15px; text-align: left;">Due Date</th>
+                <th style="padding: 12px 15px; text-align: left;">Source</th>
+                <th style="padding: 12px 15px; text-align: left;">Status</th>
+                <th style="padding: 12px 15px; text-align: left;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var debtTransaction in filteredRemainingDebts)
+            {
+                <tr style="transition: background-color 0.3s; background-color: #ffffff;">
+                    <td style="padding: 12px 15px;">@debtTransaction.Amount</td>
+                    <td style="padding: 12px 15px;">@debtTransaction.Title</td>
+                    <td style="padding: 12px 15px;">@debtTransaction.DueDate.ToShortDateString()</td>
+                    <td style="padding: 12px 15px;">@debtTransaction.Source</td>
+                    <td style="padding: 12px 15px; font-weight: bold;
+                              color: @(debtTransaction.Status == "Pending" ? "#dc3545" :
+                                      debtTransaction.Status == "Cleared" ? "#28a745" : "#000000");">
+                        @debtTransaction.Status
+                    </td>
+                    <td style="padding: 12px 15px;">
+                            <button class="btn btn-success btn-sm" style="border-radius: 4px; padding: 5px;" @onclick="() => ChangeStatus(debtTransaction.DebtId)">Clear Debt</button>
+                    </td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (showErrorModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Exception Occured.</h5>
+                    <button type="button" class="btn-close" @onclick="CloseErrorModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>@errorMessage</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
 
 
 
 @code {
 
-    private List<Transactions> transactions = new List<Transactions>();
-    private List<Transactions> debttransactions = new List<Transactions>();
-    private List<Transactions> inflowoutflowtransactions = new List<Transactions>();
     private User authenticatedUser = new User();
 
-    private List<DebtTransaction> debtTransactionModelList = new List<DebtTransaction>();
+    private List<Transactions> transactions = new List<Transactions>();
+    private List<Transactions> debtTransactions = new List<Transactions>();
+    private List<Transactions> inflowOutflowTransactions = new List<Transactions>();
+
+    private List<DebtTransactionDto> debtTransactionDtos = new List<DebtTransactionDto>();
+    private List<DebtTransactionDto> remainingDebts = new List<DebtTransactionDto>();
+    private List<DebtTransactionDto> clearedDebts = new List<DebtTransactionDto>();
 
     private double currentBalance;
     private double totalInflow;
     private double totalOutflow;
-    private double remainingDebt;
-    private double clearedDebt;
+    private double totalRemainingDebt;
+    private double totalClearedDebt;
+    private double totalDebt;
 
+    private int transactionCount;
+    private int inflowCount;
+    private int outflowCount;
+    private int debtCount;
+    private int remainingDebtCount;
+    private int clearedDebtCount;
+
+    private string errorMessage;
+    private bool showErrorModal = false;
+
+    private void CloseErrorModal()
+    {
+        showErrorModal = false;
+    }
 
     //for filters
     private IEnumerable<Transactions> filteredTransactions => FilterTransactions();
     private IEnumerable<Transactions> sortedTransactions => SortTransactions(filteredTransactions);
 
-
     private string sortDirection = "Highest"; //Default
 
+    private DateTime? filterDateFrom;
+    private DateTime? filterDateTo;
+
+    private IEnumerable<DebtTransactionDto> filteredRemainingDebts => FilterRemainingDebtTransactions();
 
     // Fetch transactions on initialization
     protected override async Task OnInitializedAsync()
     {
 
-        await GetLoggedUsers();
-        await LoadLoggedUsersTransactions();
+        authenticatedUser = AuthenticationStateService.GetAuthenticatedUser();
 
-        await SeperateDebtTransactions();
-        await LoadDebtTransactions();
+        transactions = await TransactionService.LoadUsersTransactionsAsync(authenticatedUser.UserId);
 
-        CalculateCurrentBalance();
+        inflowOutflowTransactions = TransactionHelperService.ExtractInflowOutflowTransactions(transactions);
+        debtTransactions = TransactionHelperService.ExtractDebtTransactions(transactions);
+
+        debtTransactionDtos = await TransactionHelperService.LoadDebtTransactions(debtTransactions);
+
+        remainingDebts = TransactionHelperService.ExtractRemainingDebts(debtTransactionDtos);
+        clearedDebts = TransactionHelperService.ExtractClearedDebts(debtTransactionDtos);
+
+        totalInflow = TransactionHelperService.CalculateTotalInflow(inflowOutflowTransactions);
+        totalOutflow = TransactionHelperService.CalculateTotalOutflow(inflowOutflowTransactions);
+        totalRemainingDebt = TransactionHelperService.CalculateTotalRemainingDebt(debtTransactionDtos);
+        totalClearedDebt = TransactionHelperService.CalculateTotalClearedDebt(debtTransactionDtos);
+        totalDebt = totalRemainingDebt + totalClearedDebt;
+
+        transactionCount = transactions.Count;
+        inflowCount = inflowOutflowTransactions.Count(t => t.TypeId == "Credit");
+        outflowCount = inflowOutflowTransactions.Count(t => t.TypeId == "Debit");
+        debtCount = debtTransactions.Count;
+        remainingDebtCount = remainingDebts.Count;
+        clearedDebtCount = clearedDebts.Count;
+
+        currentBalance = TransactionHelperService.CalculateCurrentBalance(totalInflow, totalOutflow, totalRemainingDebt);
 
         if (transactions == null || !transactions.Any())
         {
             Console.WriteLine("No transactions found.");
         }
 
-    }
-
-    private async Task GetLoggedUsers()
-    {
-        authenticatedUser = AuthenticationStateService.GetAuthenticatedUser();
-
-        if (authenticatedUser == null)
-        {
-            NavigationManager.NavigateTo("/");
-        }
-
-    }
-
-    private async Task LoadLoggedUsersTransactions()
-    {
-        transactions = await TransactionService.LoadUsersTransactionsAsync(authenticatedUser.UserId);
-
-    }
-
-    private async Task SeperateDebtTransactions()
-    {
-        debttransactions = transactions.Where(t => t.TypeId == "Debt").ToList(); //Debt transactions are seperated
-
-        inflowoutflowtransactions = transactions.Where(t => t.TypeId != "Debt").ToList();//Inflow and outflow transactions are seperated type id not having debt
-
-    }
-
-    private async Task LoadDebtTransactions()
-    {
-
-
-        foreach (Transactions debttransaction in debttransactions)
-        {
-            Debts debt = await DebtService.LoadUsersTransactionsDebtsAsync(debttransaction.TransactionId);
-
-            DebtTransaction debtTransactionModel = new DebtTransaction(debttransaction.TransactionId, debttransaction.TypeId, debttransaction.UserId,
-                debttransaction.TagId, debttransaction.Amount, debttransaction.Date,
-                debttransaction.Note, debttransaction.Title, debt.DebtId, debt.DueDate, debt.Source, debt.Status);
-
-            debtTransactionModelList.Add(debtTransactionModel);
-
-
-        }
-    }
-
-    private void CalculateCurrentBalance()
-    {
-        totalInflow = (double)inflowoutflowtransactions.Where(t => t.TypeId == "Credit").Sum(t => t.Amount);
-        totalOutflow = (double)inflowoutflowtransactions.Where(t => t.TypeId == "Debit").Sum(t => t.Amount);
-        remainingDebt = (double)debtTransactionModelList.Where(d => d.Status == "Pending").Sum(d => d.Amount);
-        clearedDebt = (double)debtTransactionModelList.Where(d => d.Status == "Cleared").Sum(d => d.Amount);
-
-        currentBalance = totalInflow + remainingDebt - totalOutflow - clearedDebt;
     }
 
     private IEnumerable<Transactions> FilterTransactions()
@@ -170,5 +296,65 @@
             _ => filteredTransactions
         };
     }
+
+    private IEnumerable<DebtTransactionDto> FilterRemainingDebtTransactions()
+    {
+        var filteredData = remainingDebts.AsQueryable();
+
+        if (filterDateFrom.HasValue || filterDateTo.HasValue)
+        {
+            filteredData = filteredData.Where(t =>
+                (!filterDateFrom.HasValue || t.DueDate.Date >= filterDateFrom.Value.Date) &&
+                (!filterDateTo.HasValue || t.DueDate.Date <= filterDateTo.Value.Date));
+        }
+
+        return filteredData;
+    }
+
+    private async Task ChangeStatus (int debtID)
+    {
+        try{
+            var changedDebt = debtTransactionDtos.FirstOrDefault(d => d.DebtId == debtID);
+            if ((currentBalance - totalRemainingDebt) < changedDebt.Amount)
+            {               
+                errorMessage = "Insufficient balance remaining from inflow to clear debt.";
+                Console.WriteLine(errorMessage);
+                throw new Exception(errorMessage);
+            }
+            else
+            {
+                await DebtService.ClearDebtAsync(debtID);
+                
+                NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+            }
+        }
+        catch(Exception ex)
+        {
+            errorMessage = $"Error occured in clearing debt :{ex.Message}";
+            Console.WriteLine(errorMessage);
+            showErrorModal = true;
+        }
+    }
+
+
+    // For data visualization on radzen components
+    class DataItem
+    {
+        public string Type { get; set; }
+        public double Value { get; set; }
+    }
+
+    private IEnumerable<DataItem> debtDataItem => new List<DataItem>
+    {
+        new DataItem { Type = "Remaining Debt", Value = totalRemainingDebt},
+        new DataItem { Type = "Cleared Debt", Value = totalClearedDebt}
+    };
+
+    private IEnumerable<DataItem> transactionDataItem => new List<DataItem>
+    {
+        new DataItem { Type = "Inflow", Value = totalInflow},
+        new DataItem { Type = "Outflow", Value = totalOutflow}
+    };
+
 
 }

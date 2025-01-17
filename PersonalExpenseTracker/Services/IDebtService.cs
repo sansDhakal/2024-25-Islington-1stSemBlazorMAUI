@@ -12,5 +12,8 @@ namespace PersonalExpenseTracker.Services
         Task SaveDebtAsync(Debts debt);
 
         Task<Debts> LoadUsersTransactionsDebtsAsync(int transactionId);
+
+        Task ClearDebtAsync(int debtId);
+
     }
 }

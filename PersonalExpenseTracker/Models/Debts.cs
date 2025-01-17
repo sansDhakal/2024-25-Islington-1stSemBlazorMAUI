@@ -9,8 +9,6 @@ namespace PersonalExpenseTracker.Models
     public class Debts
     {
         public int DebtId { get; set; }
-
-       /* public string Status { get; set; }*/
        
         public DateTime DueDate { get; set; }
         public string Source { get; set; }

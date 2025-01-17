@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using PersonalExpenseTracker.Services;
+using Radzen;
 
 namespace PersonalExpenseTracker
 {
@@ -19,9 +20,10 @@ namespace PersonalExpenseTracker
             builder.Services.AddSingleton<IUserService, UserService>();
             builder.Services.AddSingleton<ITransactionService, TransactionService>();
             builder.Services.AddSingleton<IDebtService, DebtService>();
-
+            builder.Services.AddSingleton<ITransactionHelperService, TransactionHelperService>();
             builder.Services.AddSingleton<AuthenticationStateService>();
-            
+            builder.Services.AddRadzenComponents();
+
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

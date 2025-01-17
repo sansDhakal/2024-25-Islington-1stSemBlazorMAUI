@@ -5,17 +5,18 @@
 @inject NavigationManager navigationManager
 @inject AuthenticationStateService authService;
 
-<h3>Cash Inflow</h3>
+<h3 style="text-align: center; margin-top: 20px; color: #007bff; font-size: 1.5rem;">Cash Inflow</h3>
 
-<form class="transaction-form">
-    <div class="form-group">
-        <label for="amount">Amount:</label>
-        <input type="number" id="amount" class="form-control" @bind="newTransaction.Amount" required />
+<form class="transaction-form" style="max-width: 600px; margin: 20px auto; padding: 25px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+    <div class="form-group" style="margin-bottom: 20px;">
+        <label for="amount" style="font-weight: bold; font-size: 1rem;">Amount:</label>
+        <input type="number" id="amount" class="form-control" @bind="newTransaction.Amount" required placeholder="Enter amount" style="width: 100%; padding: 12px; margin-top: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 1rem;" />
     </div>
 
-    <div class="form-group">
-        <label for="tagType">Tag Type:</label>
-        <select id="tagType" class="form-control" @bind="tagType">
+    <div class="form-group" style="margin-bottom: 20px;">
+        <label for="tagType" style="font-weight: bold; font-size: 1rem;">Tag Type:</label>
+        <select id="tagType" class="form-control" @bind="tagType" required style="width: 100%; padding: 12px; margin-top: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 1rem;">
+            <option value="" disabled selected>Choose your preferred tag type</option>
             <option value="Custom">Custom</option>
             <option value="Existing">Existing</option>
         </select>
@@ -23,9 +24,10 @@
 
     @if (tagType == "Existing")
     {
-        <div class="form-group">
-            <label>Tag:</label>
-            <select class="form-control" @bind="newTransaction.TagId">
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label for="existingTag" style="font-weight: bold; font-size: 1rem;">Tag:</label>
+            <select id="existingTag" class="form-control" @bind="newTransaction.TagId" required style="width: 100%; padding: 12px; margin-top: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 1rem;">
+                <option value="" disabled selected>Choose your tag</option>
                 <option value="Yearly">Yearly</option>
                 <option value="Monthly">Monthly</option>
                 <option value="Others">Others</option>
@@ -34,28 +36,30 @@
     }
     else
     {
-        <div class="form-group">
-            <label for="customTag">Custom Tag:</label>
-            <input type="text" id="customTag" class="form-control" @bind="newTransaction.TagId" />
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label for="customTag" style="font-weight: bold; font-size: 1rem;">Custom Tag:</label>
+            <input type="text" id="customTag" class="form-control" @bind="newTransaction.TagId" placeholder="Enter custom tag" style="width: 100%; padding: 12px; margin-top: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 1rem;" />
         </div>
     }
 
-    <div class="form-group">
-        <label for="title">Title:</label>
-        <input type="text" id="title" class="form-control" @bind="newTransaction.Title" required />
+    <div class="form-group" style="margin-bottom: 20px;">
+        <label for="title" style="font-weight: bold; font-size: 1rem;">Title:</label>
+        <input type="text" id="title" class="form-control" @bind="newTransaction.Title" required placeholder="Enter title" style="width: 100%; padding: 12px; margin-top: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 1rem;" />
     </div>
 
-    <div class="form-group">
-        <label for="note">Note:</label>
-        <input type="text" id="note" class="form-control" @bind="newTransaction.Note" />
+    <div class="form-group" style="margin-bottom: 20px;">
+        <label for="note" style="font-weight: bold; font-size: 1rem;">Note:</label>
+        <input type="text" id="note" class="form-control" @bind="newTransaction.Note" placeholder="Enter note" style="width: 100%; padding: 12px; margin-top: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 1rem;" />
     </div>
 
-    <button type="button" class="btn btn-primary" @onclick="AddTransaction">Add Inflow</button>
+    <button type="button" class="btn btn-primary" @onclick="AddTransaction" style="display: block; width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 1.1rem; cursor: pointer; margin-top: 20px;">
+        Add Inflow
+    </button>
 </form>
 
 @if (errorMessage != null)
 {
-    <p class="error-message">@errorMessage</p>
+    <p class="error-message" style="color: red; font-weight: bold; text-align: center; margin-top: 20px;">@errorMessage</p>
 }
 
 @code {
@@ -66,6 +70,39 @@
 
     private async Task AddTransaction()
     {
+        // Validation
+        if (newTransaction.Amount <= 0)
+        {
+            errorMessage = "Amount must be greater than zero.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(tagType))
+        {
+            errorMessage = "Tag Type is required.";
+            return;
+        }
+
+        if (tagType == "Existing" && string.IsNullOrWhiteSpace(newTransaction.TagId))
+        {
+            errorMessage = "Please select an existing tag.";
+            return;
+        }
+
+        if (tagType == "Custom" && string.IsNullOrWhiteSpace(newTransaction.TagId))
+        {
+            errorMessage = "Custom Tag is required.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(newTransaction.Title))
+        {
+            errorMessage = "Title is required.";
+            return;
+        }
+
+        errorMessage = null;
+
         var user = authService.GetAuthenticatedUser();
         if (user != null)
         {
@@ -92,80 +129,3 @@
         }
     }
 }
-
-<style>
-    /* General Styles */
-    body {
-        font-family: Arial, sans-serif;
-        background-color: #f8f9fa;
-        color: #333;
-        margin: 0;
-        padding: 0;
-    }
-
-    h3 {
-        text-align: center;
-        margin-top: 20px;
-        color: #007bff;
-    }
-
-    /* Form Styles */
-    .transaction-form {
-        max-width: 600px;
-        margin: 20px auto;
-        padding: 20px;
-        background-color: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .form-group {
-        margin-bottom: 15px;
-    }
-
-    .form-group label {
-        font-weight: bold;
-        font-size: 14px;
-    }
-
-    .form-group input,
-    .form-group select {
-        width: 100%;
-        padding: 10px;
-        margin-top: 5px;
-        border-radius: 4px;
-        border: 1px solid #ccc;
-        font-size: 14px;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus {
-        border-color: #007bff;
-        outline: none;
-    }
-
-    .btn {
-        display: block;
-        width: 100%;
-        padding: 10px;
-        background-color: #007bff;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        font-size: 16px;
-        cursor: pointer;
-        margin-top: 20px;
-    }
-
-    .btn:hover {
-        background-color: #0056b3;
-    }
-
-    /* Error Message Styling */
-    .error-message {
-        color: red;
-        font-weight: bold;
-        text-align: center;
-        margin-top: 20px;
-    }
-</style>

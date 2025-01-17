@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PersonalExpenseTracker.Models
+namespace PersonalExpenseTracker.Dtos
 {
-    public class DebtTransaction
+    public class DebtTransactionDto
     {
         public int TransactionId { get; set; }
         public string TypeId { get; set; }
@@ -26,7 +26,7 @@ namespace PersonalExpenseTracker.Models
         public DateTime DueDate { get; set; }
         public string Source { get; set; }
 
-        public DebtTransaction(int transactionId, string typeId, int userId, string tagId, double amount, 
+        public DebtTransactionDto(int transactionId, string typeId, int userId, string tagId, double amount,
             DateTime date, string? note, string title, int debtId, DateTime dueDate, string source, string status)
         {
             TransactionId = transactionId;
